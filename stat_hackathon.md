@@ -51,3 +51,56 @@
 ```
 최근데이터 및 다른지역 데이터확장시 서울지역 뿐만 아니라 전국의 분포, 최근 상황 파악가능
 ```
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+
+```{r cars}
+library(shiny)
+
+# Define UI for application that draws a histogram
+ui <- fluidPage(
+  titlePanel("상관분석결과"),
+  
+  fluidRow(
+    column(4, wellPanel(
+      radioButtons("picture", "picture",
+                   c("number", "circle"))
+    )),
+    column(4,imageOutput("image2")
+    )
+  )
+)
+
+# Define server logic required to draw a histogram
+server <- function(input, output, session) {
+  
+  # image1 creates a new PNG file each time Radius changes
+  
+  # image2 sends pre-rendered images
+  output$image2 <- renderImage({
+    
+    if (input$picture == "circle") {
+      return(list(
+        src = "www/bbb.png",width=500,height=500,
+        alt = "circle"
+      ))
+    } else if (input$picture == "number") {
+      return(list(
+        src="www/aaa.png",width=500,height=500,
+        alt="number")
+      )
+    }
+    
+  },deleteFile=FALSE)
+}
+shinyApp(ui,server)
+```
+
+
+
