@@ -82,7 +82,7 @@ plot2=ggmap(myMap)+ geom_point(aes(x = lon, y = lat),
 grid.arrange(plot1, plot2, ncol = 2)
 
 #회귀직선이용 예측값사용
-metal_kri$pred <- exp(predict(met_lm_red,metal_kri))
+metal_kri$Pb <- exp(predict(met_lm_red,metal_kri))
 
 Pb.colors <- c("#FFFFF4FF","#FFFFDFFF","#FFFFCAFF","#FFFFB5FF","#FFFF9FFF","#FFFF8AFF","#FFFF75FF","#FFFF60FF","#FFFF4AFF","#FFFF35FF","#FFFF35FF","#FFFF20FF","#FFFF0BFF","#FFFF00FF","#FFF800FF","#FFF100FF",
                "#FFEA00FF","#FFE300FF","#FFDD00FF","#FFD600FF","#FFCF00FF","#FFC800FF","#FFC100FF","#FFBA00FF","#FFB300FF","#FFAC00FF","#FFA500FF","#FF9F00FF","#FF9800FF","#FF9100FF","#FF8A00FF","#FF8300FF",
@@ -174,31 +174,91 @@ image(int.data,col=Pb.colors,add=T)
 contour(int.data,add=T,col=4,lwd=1,labcex=1)
 map("world",xlim=x1r,ylim=x2r,lwd=2,add=T)
 
-##추가
-require(Kormaps)
-require(tmap)
 
-install.packages("maptools")
+#######################################33
+library(RColorBrewer)
 library(maptools)
+library(foreign)
+library(ggplot2)
+library(dplyr)
+library(gdata)
+library(gridExtra)
 
-maptools::readShapePoly("KOR_adm2.shp")
+seoul <- read.dbf("v시군구_TM.dbf")
+seoul <- filter(seoul, 광역시명 == "서울특별")
+seoul$시군구명 <- as.character(seoul$시군구명)
+seoulmap <- readShapePoly("v시군구_TM.shp")
+seoulmap <- seoulmap[which(seoulmap@data$광역시명 == "서울특별"),]
+seoulmap <- fortify(seoulmap)
 
-shp2 <- readShapePoly("C:\\Users\\user\\Downloads\\KOR_adm_shp\\KOR_adm2.shp")
-str(shp2@data)
+for(i in 1:25){ 
+  j <- i - 1
+  eval(parse(text = paste0("seoulmap$id[seoulmap$id == ",j,"] <- seoul$시군구명[",i,"]")))
+  }
+## ggplot2로 plotting시 배경을 없애는 function을 정의 
+theme_clean <- function(base_size = 12){
+  require(grid)
+  theme_grey(base_size) %+replace% 
+  theme(
+    axis.title = element_blank(),
+    axis.text = element_blank(), 
+    panel.background = element_blank(), 
+    panel.grid = element_blank(), 
+    axis.ticks.length = unit(0, "cm"), 
+    axis.ticks.margin = unit(0, "cm"), 
+    panel.margin = unit(0, "lines"), 
+    plot.margin = unit(c(0, 0, 0, 0), "lines"), 
+    complete = TRUE 
+  ) 
+}
 
-ggplot2::fortify()
-shp2_ffd2 <- fortify(shp2, region = "NAME_2")
-shp2_subset <- shp2[shp2$NAME_1 == "Seoul",]
-seoul_ffd <- fortify(shp2_subset, region="NAME_2")
-ggplot(seoul_ffd, aes(x=long, y=lat, group=group)) + 
-  geom_polygon(aes(fill=id))
+metal_all <- merge(metal,metal_kri,all=T)
+metal_all$Loca <- as.character(metal_all$Loca)
 
-seoul_ffd
+#Gangnam <- metal_all[metal_all$Loca == "강남구",]
+#Gangnam$Day <- paste(Gangnam$Year,"0",Gangnam$Month,sep="")
+#write.csv(Gangnam,"Gangnam.csv")
 
-seoul_value <- data.frame(
-  seoul_ffd %>% 
-    select(id) %>%
-    distinct,
-  value = round(runif(16,10,100)))
+Gangnam <- read.csv("Gangnam.csv",header = T)
+Gangnam$Day <- as.character(Gangnam$Day)
+ggplot(Gangnam, aes(Day, Pb)) + geom_point()
 
-shp2_value
+a <- metal_all[metal_all$Year == 2010,]
+a <- a[a$Month == 1,]
+
+data <- left_join(seoulmap, a, by = c("id" = "Loca"))
+head(data)
+RdPu <- brewer.pal(9,"RdPu") 
+
+ggplot(data, aes(x = long, y = lat.x, group = id , fill = Pb)) + geom_polygon(colour = "white") + scale_fill_gradient2(low = RdPu[1], mid = RdPu[3] ,high = RdPu[5], midpoint = median(data$Pb))+ggtitle("2010년 1월 납농도 수치") + theme(plot.title = element_text(size = rel(1.5), lineheight = .9, family = "Times", face = "bold")) + labs(fill = "Pb") 
+
+b <- metal_all[metal_all$Year == 2011,]
+b <- b[b$Month == 1,]
+data <- left_join(seoulmap, b, by = c("id" = "Loca"))
+
+ggplot(data, aes(x = long, y = lat.x, group = id , fill = Pb)) + geom_polygon(colour = "white") + scale_fill_gradient2(low = RdPu[1], mid = RdPu[3] ,high = RdPu[5], midpoint = median(data$Pb))+ggtitle("2011년 1월 납농도 수치") + theme(plot.title = element_text(size = rel(1.5), lineheight = .9, family = "Times", face = "bold")) + labs(fill = "Pb") 
+
+c <- metal_all[metal_all$Year == 2012,]
+c <- c[c$Month == 1,]
+data <- left_join(seoulmap, c, by = c("id" = "Loca"))
+
+ggplot(data, aes(x = long, y = lat.x, group = id , fill = Pb)) + geom_polygon(colour = "white") + scale_fill_gradient2(low = RdPu[1], mid = RdPu[3] ,high = RdPu[5], midpoint = median(data$Pb))+ggtitle("2012년 1월 납농도 수치") + theme(plot.title = element_text(size = rel(1.5), lineheight = .9, family = "Times", face = "bold")) + labs(fill = "Pb") 
+
+d <- metal_all[metal_all$Year == 2013,]
+d <- d[d$Month == 1,]
+data <- left_join(seoulmap, d, by = c("id" = "Loca"))
+
+ggplot(data, aes(x = long, y = lat.x, group = id , fill = Pb)) + geom_polygon(colour = "white") + scale_fill_gradient2(low = RdPu[1], mid = RdPu[3] ,high = RdPu[5], midpoint = median(data$Pb))+ggtitle("2013년 1월 납농도 수치") + theme(plot.title = element_text(size = rel(1.5), lineheight = .9, family = "Times", face = "bold")) + labs(fill = "Pb") 
+
+e <- metal_all[metal_all$Year == 2014,]
+e <- e[e$Month == 1,]
+data <- left_join(seoulmap, b, by = c("id" = "Loca"))
+
+ggplot(data, aes(x = long, y = lat.x, group = id , fill = Pb)) + geom_polygon(colour = "white") + scale_fill_gradient2(low = RdPu[1], mid = RdPu[3] ,high = RdPu[5], midpoint = median(data$Pb))+ggtitle("2014년 1월 납농도 수치") + theme(plot.title = element_text(size = rel(1.5), lineheight = .9, family = "Times", face = "bold")) + labs(fill = "Pb") 
+
+f <- metal_all[metal_all$Year == 2015,]
+f <- f[f$Month == 1,]
+data <- left_join(seoulmap, f, by = c("id" = "Loca"))
+
+ggplot(data, aes(x = long, y = lat.x, group = id , fill = Pb)) + geom_polygon(colour = "white") + scale_fill_gradient2(low = RdPu[1], mid = RdPu[3] ,high = RdPu[5], midpoint = median(data$Pb))+ggtitle("2015년 1월 납농도 수치") + theme(plot.title = element_text(size = rel(1.5), lineheight = .9, family = "Times", face = "bold")) + labs(fill = "Pb") 
+
