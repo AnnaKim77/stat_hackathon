@@ -26,5 +26,3 @@ keyword <- enc2utf8("황사")
 
 data<- searchTwitter(keyword,since='2015-01-01')
 data
-data1<- searchTwitter(keyword,since='2016-10-01')
-data1
